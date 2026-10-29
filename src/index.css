@@ -1,0 +1,544 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Atkinson Hyperlegible', sans-serif;
+  --font-display: 'Sora', sans-serif;
+  --font-mono: 'Anonymous Pro', monospace;
+}
+
+:root {
+  --font-display: 'Sora', sans-serif;
+  --font-sans: 'Atkinson Hyperlegible', sans-serif;
+  --font-mono: 'Anonymous Pro', monospace;
+}
+
+/* Humanist Clarity Standard: Sora (Display) + Atkinson Hyperlegible (Sans/Body) + Anonymous Pro (Mono Telemetry) */
+body, #root {
+  font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.font-sans {
+  font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display, [data-font="display"] {
+  font-family: 'Sora', sans-serif !important;
+}
+
+.font-mono, code, kbd, samp, pre, [data-font="mono"] {
+  font-family: 'Anonymous Pro', monospace !important;
+}
+
+/* Explicit Tab 00 Humanist Clarity Stack Enforcement */
+#tab-00-mastery-matrix {
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+}
+
+#tab-00-mastery-matrix h1,
+#tab-00-mastery-matrix h2,
+#tab-00-mastery-matrix h3,
+#tab-00-mastery-matrix h4,
+#tab-00-mastery-matrix .font-display,
+#tab-00-mastery-matrix [data-font="display"] {
+  font-family: 'Sora', sans-serif !important;
+}
+
+#tab-00-mastery-matrix .font-mono,
+#tab-00-mastery-matrix code,
+#tab-00-mastery-matrix kbd,
+#tab-00-mastery-matrix [data-font="mono"] {
+  font-family: 'Anonymous Pro', monospace !important;
+}
+
+/* Paper Texture and Subject Harmony Styling */
+.te-tile-paper {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 0),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%);
+  background-size: 4px 4px, 100% 100%;
+}
+
+.te-chassis-paper {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 0);
+  background-size: 5px 5px;
+}
+
+@keyframes domain-harmony-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px #FFB800, 0 4px 16px rgba(255, 184, 0, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #F59E0B, 0 6px 24px rgba(255, 184, 0, 0.45);
+  }
+}
+
+.domain-harmony-active {
+  animation: domain-harmony-pulse 2.4s infinite ease-in-out;
+}
+
+@layer base {
+  :root {
+    
+    /* 1. CLASSIC TE INDUSTRIAL THEME (Default) */
+    --te-orange: #FF3B00;
+    --te-yellow: #FFB800;
+    --te-blue: #0047FF;
+    --te-purple: #9333EA;
+    --te-red: #DC2626;
+    --te-magenta: #E11D48;
+    --te-sand: #FAF9F6;
+    --te-sand-light: #FAF9F6;
+    --te-sand-dark: #ECEAE4;
+    --te-chassis: #ECEAE4;
+    --te-black: #141416;
+    --te-dark: #27272A;
+    --te-screen-bg: #E8E6DF;
+    --te-screen-text: #141416;
+    --te-border: #141416;
+    --te-card-bg: #FAF9F6;
+
+    /* Crayon aliases */
+    --crayon-blue: #0047FF;
+    --crayon-purple: #9333EA;
+    --crayon-yellow: #FFB800;
+    --crayon-orange: #FF3B00;
+    --crayon-red: #DC2626;
+    --crayon-magenta: #E11D48;
+    --crayon-paper: #FAF9F6;
+    --crayon-card: #FAF9F6;
+    --crayon-card-sub: #ECEAE4;
+    --crayon-charcoal: #141416;
+    --crayon-subtext: #5C5A52;
+    --crayon-border: #141416;
+    --crayon-screen-bg: #E8E6DF;
+    --crayon-screen-text: #141416;
+
+    /* Hyper Chroma 15+ Unique Non-Green Palette */
+    --chroma-1-cobalt: #0047FF;
+    --chroma-2-indigo: #4F46E5;
+    --chroma-3-sky: #0284C7;
+    --chroma-4-cyan: #0EA5E9;
+    --chroma-5-violet: #8B5CF6;
+    --chroma-6-purple: #9333EA;
+    --chroma-7-fuchsia: #D946EF;
+    --chroma-8-hotpink: #EC4899;
+    --chroma-9-rose: #F43F5E;
+    --chroma-10-crimson: #DC2626;
+    --chroma-11-coral: #FF5722;
+    --chroma-12-orange: #FF3B00;
+    --chroma-13-tangerine: #EA580C;
+    --chroma-14-amber: #FFB800;
+    --chroma-15-gold: #F59E0B;
+    --chroma-16-yellow: #FACC15;
+    --chroma-17-plum: #831843;
+    --chroma-18-lilac: #C084FC;
+    --chroma-19-copper: #C2410C;
+  }
+
+  /* 2. CRAYON LIGHT THEME */
+  html.theme-crayon-light,
+  body.theme-crayon-light,
+  .theme-crayon-light {
+    --crayon-blue: #2563EB;
+    --crayon-purple: #7C3AED;
+    --crayon-yellow: #F59E0B;
+    --crayon-orange: #EA580C;
+    --crayon-red: #DC2626;
+    --crayon-magenta: #DB2777;
+    --crayon-paper: #F8F6F0;
+    --crayon-card: #FFFFFF;
+    --crayon-card-sub: #F3F1EB;
+    --crayon-charcoal: #18181B;
+    --crayon-subtext: #475569;
+    --crayon-border: #18181B;
+    --crayon-screen-bg: #FEF9C3;
+    --crayon-screen-text: #1E1B4B;
+
+    --te-orange: var(--crayon-orange);
+    --te-yellow: var(--crayon-yellow);
+    --te-blue: var(--crayon-blue);
+    --te-purple: var(--crayon-purple);
+    --te-red: var(--crayon-red);
+    --te-sand: var(--crayon-paper);
+    --te-sand-light: var(--crayon-card);
+    --te-sand-dark: #E6E2D8;
+    --te-chassis: var(--crayon-paper);
+    --te-black: var(--crayon-charcoal);
+    --te-border: var(--crayon-border);
+    --te-card-bg: var(--crayon-card);
+  }
+
+  /* 3. VIBRANT 30+ SPECTRUM (NO GREEN) THEME */
+  html.theme-vibrant-prism,
+  body.theme-vibrant-prism,
+  .theme-vibrant-prism {
+    --crayon-blue: #0077FF;
+    --crayon-purple: #8B5CF6;
+    --crayon-yellow: #FBBF24;
+    --crayon-orange: #FF5500;
+    --crayon-red: #FF0055;
+    --crayon-magenta: #EC4899;
+    --crayon-paper: #FCF8FF;
+    --crayon-card: #FFF5F7;
+    --crayon-card-sub: #F5EEFD;
+    --crayon-charcoal: #0F0A1C;
+    --crayon-subtext: #4C3869;
+    --crayon-border: #4F46E5;
+    --crayon-screen-bg: #FFF1F2;
+    --crayon-screen-text: #881337;
+
+    --te-orange: #FF5500;
+    --te-yellow: #F59E0B;
+    --te-blue: #0077FF;
+    --te-purple: #8B5CF6;
+    --te-red: #FF0055;
+    --te-sand: #FCF8FF;
+    --te-sand-light: #FFF5F7;
+    --te-sand-dark: #F3E8FF;
+    --te-chassis: #FDF2F8;
+    --te-black: #1E1B4B;
+    --te-border: #4338CA;
+    --te-card-bg: #FFF5F7;
+  }
+
+  /* 4. HYPER-CHROMA 15-COLOR SPECTRUM THEME (NO WHITE / NO GREY / NO BLACK / ZERO GREEN) */
+  html.theme-hyper-chroma,
+  body.theme-hyper-chroma,
+  .theme-hyper-chroma {
+    --crayon-blue: #0047FF;
+    --crayon-purple: #9333EA;
+    --crayon-yellow: #FFB800;
+    --crayon-orange: #FF3B00;
+    --crayon-red: #DC2626;
+    --crayon-magenta: #EC4899;
+    --crayon-paper: #FFF7ED;
+    --crayon-card: #FEF3C7;
+    --crayon-card-sub: #FCE7F3;
+    --crayon-charcoal: #312E81;
+    --crayon-subtext: #701A75;
+    --crayon-border: #4338CA;
+    --crayon-screen-bg: #FFE4E6;
+    --crayon-screen-text: #831843;
+
+    --te-orange: #FF3B00;
+    --te-yellow: #FFB800;
+    --te-blue: #0047FF;
+    --te-purple: #8B5CF6;
+    --te-red: #E11D48;
+    --te-magenta: #D946EF;
+    --te-sand: #FFF7ED;
+    --te-sand-light: #FAF5FF;
+    --te-sand-dark: #FDE047;
+    --te-chassis: #FFF1F2;
+    --te-black: #312E81;
+    --te-dark: #4338CA;
+    --te-screen-bg: #FEF9C3;
+    --te-screen-text: #831843;
+    --te-border: #4F46E5;
+    --te-card-bg: #FAF5FF;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--te-sand);
+    color: var(--te-black);
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .font-mono, code, kbd, samp {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Animations for Chapter Matrix & Tiles */
+@keyframes rank-shimmer {
+  0% { transform: translateX(-150%) rotate(25deg); }
+  50%, 100% { transform: translateX(250%) rotate(25deg); }
+}
+
+@keyframes hazard-beacon-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0);
+  }
+}
+
+@keyframes due-beacon-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7);
+  }
+  50% {
+    opacity: 0.88;
+    box-shadow: 0 0 0 4px rgba(217, 119, 6, 0);
+  }
+}
+
+.animate-hazard-pulse {
+  animation: hazard-beacon-pulse 1.8s infinite ease-in-out;
+}
+
+.animate-due-pulse {
+  animation: due-beacon-pulse 2s infinite ease-in-out;
+}
+
+.rank-shimmer-sweep {
+  animation: rank-shimmer 3.5s infinite ease-in-out;
+}
+
+@keyframes apex-aura-pulse {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(240, 79, 203, 0.45), 0 0 50px rgba(226, 188, 57, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(240, 79, 203, 0.8), 0 0 75px rgba(226, 188, 57, 0.5);
+  }
+}
+
+.animate-apex-aura {
+  animation: apex-aura-pulse 3s infinite ease-in-out;
+}
+
+@keyframes indigo-astral-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(73, 62, 164, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(73, 62, 164, 0.7);
+  }
+}
+
+.animate-indigo-astral {
+  animation: indigo-astral-pulse 3.5s infinite ease-in-out;
+}
+
+/* Tactile Hardware Button & Keycap Classes */
+.te-btn-mechanical {
+  background-color: #FFFFFF;
+  color: #141416;
+  border: 2px solid var(--te-border, #141416);
+  border-radius: 4px;
+  box-shadow: 2px 2px 0px var(--te-border, #141416);
+  transition: all 0.05s ease-out;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.te-btn-mechanical:hover {
+  background-color: #F4F3EE;
+}
+
+.te-btn-mechanical:active {
+  box-shadow: 0px 0px 0px #141416;
+  transform: translate(2px, 2px);
+}
+
+.te-btn-orange {
+  background-color: var(--te-orange, #FF3B00);
+  color: #FFFFFF;
+  border: 2px solid #141416;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0px #141416;
+  transition: all 0.05s ease-out;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.te-btn-orange:hover {
+  opacity: 0.92;
+}
+
+.te-btn-orange:active {
+  box-shadow: 0px 0px 0px #141416;
+  transform: translate(2px, 2px);
+}
+
+.te-chassis-card {
+  background-color: var(--te-sand-light, #FAF9F6);
+  border: 2px solid var(--te-border, #141416);
+  box-shadow: 4px 4px 0px var(--te-border, #141416);
+  border-radius: 4px;
+}
+
+.te-screw {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #C5C3BB;
+  border: 1px solid #141416;
+}
+
+/* ========================================================================= */
+/* PRINT & PDF EXPORT STYLESHEET */
+/* ========================================================================= */
+@media print {
+  @page {
+    size: auto;
+    margin: 8mm 8mm 8mm 8mm;
+  }
+
+  html, body {
+    background-color: #FFFFFF !important;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+  }
+
+  /* Hide app navigation, header, footer, hardware console, toolbars, modal sidebar, and non-printable elements */
+  header, footer, nav, aside, .no-print, button, .te-btn-mechanical, .te-btn-orange, [role="tablist"], .print-workbench-panel, .print-hide {
+    display: none !important;
+  }
+
+  /* When printing from modal, strip the dark overlay & make modal contents fill the paper */
+  #test-schedule-print-modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  #test-schedule-print-modal-overlay > div {
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  #test-schedule-print-modal-overlay .print-workbench-panel,
+  #test-schedule-print-modal-overlay .no-print,
+  #test-schedule-print-modal-overlay button {
+    display: none !important;
+  }
+
+  #pcb01-printable-schedule {
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .test-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 8px !important;
+  }
+
+  table {
+    page-break-inside: auto !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tbody {
+    display: table-row-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .checkbox-box {
+    border: 1px solid #000000 !important;
+    background: #FFFFFF !important;
+    display: inline-block !important;
+  }
+}
+
+/* HARDWARE ASCENSION CONSOLE ANIMATIONS */
+@keyframes frontier-needle-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scaleX(1);
+    box-shadow: 0 0 8px #FFFFFF, 0 0 16px #F04FCB;
+  }
+  50% {
+    opacity: 0.6;
+    transform: scaleX(1.4);
+    box-shadow: 0 0 4px #FFFFFF, 0 0 8px #F04FCB;
+  }
+}
+
+.animate-frontier-needle {
+  animation: frontier-needle-pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes apex-magenta-aurora {
+  0%, 100% {
+    filter: brightness(1) drop-shadow(0 0 8px rgba(240, 79, 203, 0.5));
+  }
+  50% {
+    filter: brightness(1.2) drop-shadow(0 0 16px rgba(240, 79, 203, 0.85));
+  }
+}
+
+.animate-magenta-aurora {
+  animation: apex-magenta-aurora 2.6s infinite ease-in-out;
+}
+
+@keyframes beacon-glow-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9));
+  }
+}
+
+.animate-beacon-pulse {
+  animation: beacon-glow-pulse 2s infinite ease-in-out;
+}
+
+@keyframes quantum-stream-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-conduit-shimmer {
+  background-size: 200% 100%;
+  animation: quantum-stream-shimmer 4s infinite linear;
+}
+

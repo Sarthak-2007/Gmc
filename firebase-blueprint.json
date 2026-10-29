@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile and sync metadata",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Auth UID of the user" },
+        "email": { "type": "string", "description": "User email address if authenticated" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "lastSyncedAt": { "type": "string", "description": "ISO timestamp of last cloud sync" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of user creation" }
+      },
+      "required": ["userId"]
+    },
+    "ConsoleState": {
+      "title": "ConsoleState",
+      "description": "The complete NEET Study Console state including chapters, logs, tests, scores, and settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Auth UID owner of this state" },
+        "chapters": { "type": "array", "description": "List of 86 syllabus chapters with stage, progress, and pillars" },
+        "studyLogs": { "type": "array", "description": "History of study sessions and confidence ratings" },
+        "tests": { "type": "array", "description": "Registered exams, mocks, and test syllabus" },
+        "testScores": { "type": "array", "description": "Logged test scores and analysis" },
+        "settings": { "type": "object", "description": "Spaced repetition intervals and multipliers" },
+        "tutorialCompleted": { "type": "boolean", "description": "Whether the guide was completed" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last state update" }
+      },
+      "required": ["userId", "chapters", "studyLogs", "tests"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "entity": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/consoleData/state": {
+      "entity": "ConsoleState",
+      "description": "User cloud synced study console database"
+    }
+  }
+}

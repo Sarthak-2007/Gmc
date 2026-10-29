@@ -1,0 +1,8 @@
+{
+  "name": "New PCB-01 Study Console",
+  "description": "A personal spaced-repetition study console for NEET exam prep (Physics, Chemistry, Botany, Zoology) with priority generator, revision engine, and test tracker.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
