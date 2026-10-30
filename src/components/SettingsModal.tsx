@@ -138,6 +138,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => setSaveSuccess(false), 2000);
   };
 
+  const [confirmAction, setConfirmAction] = useState<'load_testing' | 'factory_reset' | 'restore_cloud' | null>(null);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -152,6 +154,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }, 1200);
     } catch (err: any) {
       setImportError(err.message || 'Failed to parse backup JSON.');
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -170,9 +174,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleRestoreCloudClick = async () => {
-    if (!confirm('Restore your latest cloud-saved progress? This will override unsaved local changes with your cloud data.')) {
+    if (confirmAction !== 'restore_cloud') {
+      sound.playKeyClick();
+      setConfirmAction('restore_cloud');
       return;
     }
+    setConfirmAction(null);
     setIsCloudLoading(true);
     setCloudMessage(null);
     try {
@@ -1009,10 +1016,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   type="button"
                   onClick={handleRestoreCloudClick}
                   disabled={isCloudLoading}
-                  className="te-btn-mechanical px-2.5 py-1 text-[10px] font-bold flex items-center gap-1"
+                  className={`te-btn-mechanical px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 ${
+                    confirmAction === 'restore_cloud' ? 'bg-[#FF3B00] text-white border-[#141416]' : ''
+                  }`}
                 >
-                  <CloudCheck className="w-3 h-3 text-[#0047FF]" />
-                  <span>Restore from Cloud</span>
+                  <CloudCheck className={`w-3 h-3 ${confirmAction === 'restore_cloud' ? 'text-white' : 'text-[#0047FF]'}`} />
+                  <span>{confirmAction === 'restore_cloud' ? 'Click Again to Confirm Restore' : 'Restore from Cloud'}</span>
                 </button>
               </div>
             </div>
@@ -1142,6 +1151,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  if (confirmAction !== 'load_testing') {
+                    sound.playKeyClick();
+                    setConfirmAction('load_testing');
+                    return;
+                  }
+                  setConfirmAction(null);
                   try {
                     sound.playCommitSuccess();
                     const oneYearState = generateOneYearTestingData(appState);
@@ -1159,12 +1174,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="te-btn-mechanical px-3 py-1.5 text-xs font-black flex items-center gap-1.5 cursor-pointer bg-[#FF3B00] text-white hover:bg-[#E03400] border-[#141416] shadow-[2px_2px_0px_#141416]"
               >
                 <Database className="w-3.5 h-3.5 text-white" />
-                <span>Load 1-Year Testing Data</span>
+                <span>
+                  {confirmAction === 'load_testing'
+                    ? 'Confirm Overwrite with 1-Year Data?'
+                    : 'Load 1-Year Testing Data'}
+                </span>
               </button>
 
               <button
                 type="button"
                 onClick={() => {
+                  if (confirmAction !== 'factory_reset') {
+                    sound.playKeyClick();
+                    setConfirmAction('factory_reset');
+                    return;
+                  }
+                  setConfirmAction(null);
                   sound.playTrashVaporize();
                   onResetSeedData();
                   setImportSuccess('Factory syllabus state restored successfully.');
@@ -1173,11 +1198,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClose();
                   }, 800);
                 }}
-                className="te-btn-mechanical px-3 py-1.5 text-xs font-black flex items-center gap-1.5 cursor-pointer text-[#E52E2E] bg-[#FAF9F6] border-[#141416]"
+                className={`te-btn-mechanical px-3 py-1.5 text-xs font-black flex items-center gap-1.5 cursor-pointer border-[#141416] ${
+                  confirmAction === 'factory_reset'
+                    ? 'bg-[#E52E2E] text-white'
+                    : 'text-[#E52E2E] bg-[#FAF9F6]'
+                }`}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Factory Reset Seed</span>
+                <span>
+                  {confirmAction === 'factory_reset'
+                    ? 'Confirm Factory Reset?'
+                    : 'Factory Reset Seed'}
+                </span>
               </button>
+
+              {confirmAction && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playModalClose();
+                    setConfirmAction(null);
+                  }}
+                  className="te-btn-mechanical px-2.5 py-1.5 text-xs font-bold cursor-pointer bg-[#ECEAE4] text-[#141416]"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
 
             {importError && (

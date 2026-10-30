@@ -1235,7 +1235,9 @@ export const ShadowArmyMatrix: React.FC<ShadowArmyMatrixProps> = ({
             chapter: c.chapter,
             rank: c.rank,
             score: c.masteryScore,
+            completionPercent: c.completionPercent,
             isFirstPass,
+            isInProgress: !isFirstPass && c.completionPercent > 0,
             isPink,
             color: isPink ? '#F04FCB' : CHAPTER_RANKS[c.rank]?.color || '#64748B',
           };
@@ -1759,7 +1761,7 @@ export const ShadowArmyMatrix: React.FC<ShadowArmyMatrixProps> = ({
                 </span>
                 <span className="text-[#FF3B00] font-black uppercase tracking-wider">Mastery Matrix</span>
                 <span aria-hidden="true">·</span>
-                <span>All 97 Syllabus Chapters</span>
+                <span>All {overallStats.total} Syllabus Chapters</span>
                 <span aria-hidden="true">·</span>
                 <span className="text-[#141416] font-black">{overallStats.readyPercentage}% Exam Ready</span>
               </div>
@@ -1843,80 +1845,161 @@ export const ShadowArmyMatrix: React.FC<ShadowArmyMatrixProps> = ({
           </div>
         </div>
 
-        {/* PURE VISUAL CYBERNETIC SPECTRUM PROGRESSION (ZERO TEXT - PURE ADDICTIVE GAMIFIED PROGRESS) */}
+        {/* PURE VISUAL CYBERNETIC SPECTRUM PROGRESSION (ZERO TEXT - INTERACTIVE TACTILE PRISM REACTOR) */}
         <div className="pt-2 w-full">
           <div
-            className={`relative w-full bg-[#08080C] p-1 sm:p-1.5 rounded-lg border-2 border-[#141416] shadow-[2px_2px_0px_#141416] flex flex-col gap-1 select-none transition-all duration-300 ${
-              ascensionData.isAllPink ? 'ring-1 ring-[#F04FCB]/50 shadow-[0_0_15px_rgba(240,79,203,0.3)]' : ''
+            className={`relative w-full bg-gradient-to-b from-[#14151F] via-[#0B0C12] to-[#07080D] p-1.5 sm:p-2 rounded-xl border-2 border-[#141416] shadow-[3px_3px_0px_#141416] flex flex-col gap-1.5 select-none transition-all duration-500 ${
+              ascensionData.isAllPink
+                ? 'ring-2 ring-[#F04FCB]/70 shadow-[0_0_24px_rgba(240,79,203,0.45),3px_3px_0px_#141416]'
+                : ascensionData.isFirstPassComplete
+                ? 'ring-1 ring-[#493EA4]/60 shadow-[0_0_18px_rgba(73,62,164,0.3),3px_3px_0px_#141416]'
+                : ''
             }`}
           >
-            {/* The 86-Matrix Quantum Energy Diodes */}
-            <div className="relative h-6 sm:h-7 w-full rounded-[4px] overflow-hidden flex items-stretch bg-[#050508] ring-1 ring-white/10 p-0.5 gap-1">
-              {ascensionData.clusters.map((cluster) => (
-                <div
-                  key={cluster.subject}
-                  className="flex-1 h-full flex items-stretch gap-[1.5px] border-r border-white/10 last:border-r-0 pr-[1px]"
-                >
-                  {cluster.items.map((item) => {
-                    const isLit = !ascensionData.isFirstPassComplete ? item.isFirstPass : true;
-                    const isPinkDrive = ascensionData.isFirstPassComplete && item.isPink;
-                    const cellColor = isPinkDrive
-                      ? '#F04FCB'
-                      : isLit
-                      ? item.color
-                      : '#101016';
+            {/* Ambient Top Chassis Specular Trim */}
+            <div className="absolute inset-x-3 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
 
-                    return (
-                      <button
-                        key={item.chapter.id}
-                        type="button"
-                        onClick={() => {
-                          sound.playKeyClick();
-                          setSearchQuery(item.chapter.name);
+            {/* 4-Subject Segmented Optical Prism Array (86 Clickable Chapter Cells) */}
+            <div className="relative h-8 sm:h-9 w-full rounded-lg bg-[#05060A] ring-1 ring-white/10 p-1 flex items-stretch gap-1.5 shadow-inner">
+              {ascensionData.clusters.map((cluster) => {
+                const clusterLitCount = cluster.items.filter((i) =>
+                  ascensionData.isFirstPassComplete ? i.isPink : i.isFirstPass
+                ).length;
+                const clusterPct =
+                  cluster.items.length > 0 ? (clusterLitCount / cluster.items.length) * 100 : 0;
+
+                return (
+                  <div
+                    key={cluster.subject}
+                    className="flex-1 h-full flex flex-col gap-[3px] bg-[#0B0D14]/90 rounded-[5px] p-[3px] ring-1 ring-white/[0.07] relative overflow-hidden"
+                  >
+                    {/* Top Subject Signature Micro-Filament */}
+                    <div className="w-full h-[2px] rounded-full bg-[#161924] overflow-hidden shrink-0">
+                      <div
+                        style={{
+                          width: `${Math.max(6, clusterPct)}%`,
+                          backgroundColor: ascensionData.isFirstPassComplete
+                            ? '#F04FCB'
+                            : cluster.theme.color,
+                          boxShadow: `0 0 6px ${
+                            ascensionData.isFirstPassComplete ? '#F04FCB' : cluster.theme.color
+                          }`,
                         }}
-                        title={`${item.chapter.name} (${item.rank})`}
-                        style={{ backgroundColor: cellColor }}
-                        className={`flex-1 h-full rounded-[1px] relative cursor-pointer transition-all duration-150 hover:scale-y-125 hover:z-30 outline-none ${
-                          isLit
-                            ? isPinkDrive
-                              ? 'shadow-[0_0_8px_#F04FCB] animate-pulse ring-1 ring-white/40'
-                              : 'shadow-[0_0_5px_rgba(0,0,0,0.6)] ring-1 ring-white/20'
-                            : 'border border-white/5 opacity-30 hover:opacity-100 hover:border-white/40'
-                        }`}
-                      >
-                        {/* Upper Glare */}
-                        <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 via-white/10 to-transparent pointer-events-none rounded-[1px]" />
-                        {/* Lower Ambient Depth */}
-                        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
+                        className="h-full transition-all duration-500 rounded-full"
+                      />
+                    </div>
 
-              {/* Cylindrical Glass Specular Lens Reflection */}
-              <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none rounded-[3px]" />
+                    {/* Chapter Prism Capsules within Subject Bay */}
+                    <div className="flex-1 w-full flex items-stretch gap-[2px]">
+                      {cluster.items.map((item) => {
+                        const isLit = !ascensionData.isFirstPassComplete ? item.isFirstPass : true;
+                        const isPinkDrive = ascensionData.isFirstPassComplete && item.isPink;
+                        const isPartial = !ascensionData.isFirstPassComplete && item.isInProgress;
+                        const isSelected =
+                          inspectedChapterId === item.chapter.id ||
+                          (searchQuery.trim() !== '' &&
+                            searchQuery.toLowerCase() === item.chapter.name.toLowerCase());
+
+                        const activeColor = isPinkDrive ? '#F04FCB' : item.color;
+
+                        return (
+                          <button
+                            key={item.chapter.id}
+                            type="button"
+                            onClick={() => {
+                              sound.playKeyClick();
+                              setInspectedChapterId((prev) =>
+                                prev === item.chapter.id ? null : item.chapter.id
+                              );
+                            }}
+                            title={`${item.chapter.name} · ${item.rank}-Rank (${item.score} pts)`}
+                            aria-label={`${item.chapter.name} ${item.rank} Rank`}
+                            style={{
+                              backgroundColor: isLit ? activeColor : '#121521',
+                              boxShadow: isLit
+                                ? isPinkDrive
+                                  ? '0 0 10px rgba(240,79,203,0.85), inset 0 1px 1px rgba(255,255,255,0.65)'
+                                  : `0 0 6px ${activeColor}66, inset 0 1px 1px rgba(255,255,255,0.45)`
+                                : 'inset 0 1px 2px rgba(0,0,0,0.85)',
+                            }}
+                            className={`group/cell flex-1 h-full rounded-[2px] relative cursor-pointer transition-all duration-150 hover:-translate-y-0.5 hover:scale-y-115 hover:z-30 focus:outline-none ${
+                              isSelected
+                                ? 'ring-2 ring-white z-20 scale-y-110'
+                                : isLit
+                                ? 'ring-1 ring-black/40 hover:ring-white/90'
+                                : 'ring-1 ring-white/[0.06] hover:ring-white/50'
+                            }`}
+                          >
+                            {/* Partial In-Progress Liquid Fill (when < 100% in Phase 1) */}
+                            {!isLit && isPartial && (
+                              <div
+                                style={{
+                                  height: `${Math.max(18, Math.min(92, item.completionPercent))}%`,
+                                  backgroundColor: item.color,
+                                  boxShadow: `0 0 6px ${item.color}`,
+                                }}
+                                className="absolute inset-x-0 bottom-0 rounded-b-[1.5px] opacity-85 transition-all duration-300 pointer-events-none"
+                              />
+                            )}
+
+                            {/* Unstarted Seed Ember at bottom of unlit slot */}
+                            {!isLit && !isPartial && (
+                              <div
+                                style={{ backgroundColor: item.color }}
+                                className="absolute inset-x-[1px] bottom-[1px] h-[2px] rounded-full opacity-35 group-hover/cell:opacity-100 group-hover/cell:h-full transition-all duration-150 pointer-events-none"
+                              />
+                            )}
+
+                            {/* Top Convex Crystal Specular Highlight */}
+                            <div
+                              className={`absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b pointer-events-none rounded-t-[2px] ${
+                                isLit
+                                  ? 'from-white/50 via-white/15 to-transparent'
+                                  : 'from-white/10 to-transparent'
+                              }`}
+                            />
+
+                            {/* Bottom Machined Bevel Shade */}
+                            <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/45 to-transparent pointer-events-none rounded-b-[2px]" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Micro Precision Conduit Filament & Milestone Jewels (Zero Text) */}
-            <div className="relative w-full h-1 bg-[#12121A] rounded-full overflow-hidden flex items-center">
-              {/* Active Luminous Laser Track */}
+            {/* Dual-Phase Harmonic Spectrum Conduit & 7-Color Rank Nodes (Zero Text) */}
+            <div className="relative w-full h-1.5 bg-[#090A10] rounded-full p-[1px] ring-1 ring-white/10 flex items-center overflow-hidden">
+              {/* Background 7-Rank Subtle Guide Track */}
+              <div
+                className="
+                  absolute inset-0 opacity-20 pointer-events-none
+                  bg-[linear-gradient(90deg,#64748B_0%,#D9383A_16%,#E47E35_33%,#E2BC39_50%,#377ED0_67%,#493EA4_84%,#F04FCB_100%)]
+                "
+              />
+
+              {/* Active Energized Plasma Fill */}
               <div
                 style={{
                   width: `${
                     ascensionData.isFirstPassComplete
-                      ? Math.max(3, ascensionData.pinkProgress)
-                      : Math.max(3, ascensionData.firstPassProgress)
+                      ? Math.max(2, ascensionData.pinkProgress)
+                      : Math.max(2, ascensionData.firstPassProgress)
                   }%`,
                 }}
-                className={`h-full transition-all duration-700 ease-out ${
+                className={`relative h-full rounded-full transition-all duration-700 ease-out ${
                   ascensionData.isFirstPassComplete
-                    ? 'bg-gradient-to-r from-[#FF007E] via-[#F04FCB] to-[#FF2E93] shadow-[0_0_8px_#F04FCB]'
-                    : 'bg-gradient-to-r from-[#377ED0] via-[#E2BC39] to-[#F04FCB] shadow-[0_0_6px_#00E5FF]'
+                    ? 'bg-[linear-gradient(90deg,#493EA4_0%,#C026D3_50%,#F04FCB_85%,#FF7CE5_100%)] shadow-[0_0_10px_#F04FCB]'
+                    : 'bg-[linear-gradient(90deg,#D9383A_0%,#E47E35_22%,#E2BC39_45%,#377ED0_70%,#493EA4_88%,#F04FCB_100%)] shadow-[0_0_8px_rgba(55,126,208,0.8)]'
                 }`}
-              />
+              >
+                {/* Leading Edge Laser Spark */}
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white shadow-[0_0_8px_#FFFFFF] pointer-events-none" />
+              </div>
 
-              {/* 4 Micro Diamond Milestone Notches (25%, 50%, 75%, 100%) */}
+              {/* 4 Precision Diamond Checkpoints (25%, 50%, 75%, 100%) */}
               {[25, 50, 75, 100].map((pct) => {
                 const currentProgress = ascensionData.isFirstPassComplete
                   ? ascensionData.pinkProgress
@@ -1925,13 +2008,13 @@ export const ShadowArmyMatrix: React.FC<ShadowArmyMatrixProps> = ({
                 return (
                   <div
                     key={pct}
-                    style={{ left: pct === 100 ? 'calc(100% - 4px)' : `${pct}%` }}
-                    className={`absolute w-1 h-1 rotate-45 pointer-events-none transition-all duration-300 -translate-x-1/2 ${
+                    style={{ left: pct === 100 ? 'calc(100% - 5px)' : `${pct}%` }}
+                    className={`absolute w-1.5 h-1.5 rotate-45 pointer-events-none transition-all duration-300 -translate-x-1/2 border ${
                       isReached
                         ? ascensionData.isFirstPassComplete
-                          ? 'bg-[#F04FCB] shadow-[0_0_6px_#F04FCB]'
-                          : 'bg-[#00E5FF] shadow-[0_0_6px_#00E5FF]'
-                        : 'bg-[#222230]'
+                          ? 'bg-white border-[#F04FCB] shadow-[0_0_6px_#F04FCB]'
+                          : 'bg-white border-[#377ED0] shadow-[0_0_6px_#377ED0]'
+                        : 'bg-[#141724] border-white/20'
                     }`}
                   />
                 );

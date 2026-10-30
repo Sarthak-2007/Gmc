@@ -94,7 +94,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
 
   const overdueCount = activeChapters.filter((c) => {
     const info = getChapterRevisionInfo(c, tests, todayStr);
-    return info.status === 'overdue';
+    return info.status === 'overdue' || info.status === 'due_today';
   }).length;
 
   const syllabusDonePercent = totalCount > 0 ? Math.round((firstPassDoneCount / totalCount) * 100) : 0;
@@ -116,7 +116,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
       if (stageFilter === 'IN_PROGRESS' && info.learningStage !== 'IN_PROGRESS') return false;
       if (stageFilter === 'FIRST_PASS_DONE' && info.learningStage !== 'FIRST_PASS_DONE') return false;
       if (stageFilter === 'IN_REVISION' && info.learningStage !== 'IN_REVISION') return false;
-      if (stageFilter === 'overdue' && info.status !== 'overdue') return false;
+      if (stageFilter === 'overdue' && info.status !== 'overdue' && info.status !== 'due_today') return false;
 
       // Confidence level filter
       if (confidenceFilter !== 'All' && (c.currentConfidence || 0) !== confidenceFilter) return false;
@@ -141,9 +141,20 @@ export const ChapterList: React.FC<ChapterListProps> = ({
 
     // Sorting
     if (sortOption === 'urgency') {
+      const statusPriority: Record<string, number> = {
+        overdue: 0,
+        due_today: 1,
+        due_soon: 2,
+        in_progress: 3,
+        not_started: 4,
+        scheduled: 5,
+      };
       list = [...list].sort((a, b) => {
         const infoA = getChapterRevisionInfo(a, tests, todayStr);
         const infoB = getChapterRevisionInfo(b, tests, todayStr);
+        const prioA = statusPriority[infoA.status] ?? 5;
+        const prioB = statusPriority[infoB.status] ?? 5;
+        if (prioA !== prioB) return prioA - prioB;
         return infoA.daysDiff - infoB.daysDiff;
       });
     } else if (sortOption === 'stage') {
@@ -160,7 +171,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
     }
 
     return list;
-  }, [chapters, selectedSubject, selectedClass, stageFilter, searchQuery, sortOption, tests, todayStr]);
+  }, [chapters, selectedSubject, selectedClass, stageFilter, confidenceFilter, searchQuery, sortOption, tests, todayStr]);
 
   // Group chapters by cluster if enabled
   const groupedByClusterData = useMemo(() => {
@@ -520,6 +531,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
                   sound.playModalClose();
                   setSelectedChapterForHistory(null);
                   setConfirmDeleteLogId(null);
+                  setConfirmResetHistory(false);
                 }}
                 className="text-[#8C8A82] hover:text-white p-1 cursor-pointer"
                 title="Close"
@@ -732,6 +744,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
                   sound.playModalClose();
                   setSelectedChapterForHistory(null);
                   setConfirmDeleteLogId(null);
+                  setConfirmResetHistory(false);
                 }}
                 className="te-btn-mechanical px-4 py-1.5 text-xs font-bold cursor-pointer"
               >

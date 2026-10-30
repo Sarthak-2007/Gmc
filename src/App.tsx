@@ -49,8 +49,15 @@ import {
   mergeLocalAndCloudState,
   subscribeToStateFromFirestore,
   getDeviceClientId,
+  parseFirestoreState,
 } from './services/firebase';
-import { applyStudyLogToChapter, getTodayStr, recalculateChapterFromRemainingLogs } from './services/spacedRepetition';
+import {
+  addDaysToDateStr,
+  applyStudyLogToChapter,
+  calculateNextGap,
+  getTodayStr,
+  recalculateChapterFromRemainingLogs,
+} from './services/spacedRepetition';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>(() => loadAppState());
@@ -169,24 +176,37 @@ export default function App() {
   const [isPrintScheduleOpen, setIsPrintScheduleOpen] = useState(false);
   const [isMcpOpen, setIsMcpOpen] = useState(false);
 
-  // Sync state with server MCP endpoints
+  const isServerHydratedRef = useRef(false);
+
+  // Sync state with server MCP endpoints (merge without losing newer local or server changes)
   const refreshStateFromServer = useCallback(async () => {
     try {
       const res = await fetch('/api/state');
       if (res.ok) {
         const serverData = await res.json();
         if (serverData && Array.isArray(serverData.chapters) && serverData.chapters.length > 0) {
-          setAppState(serverData);
-          saveAppState(serverData);
+          const parsedServer = parseFirestoreState(serverData);
+          const merged = mergeLocalAndCloudState(appStateRef.current, parsedServer);
+          appStateRef.current = merged;
+          setAppState(merged);
+          saveAppState(merged);
         }
       }
     } catch {
       // offline fallback
+    } finally {
+      isServerHydratedRef.current = true;
     }
   }, []);
 
+  // Hydrate from backend server on initial mount before pushing local state
+  useEffect(() => {
+    refreshStateFromServer();
+  }, [refreshStateFromServer]);
+
   // Broadcast local changes to backend server so MCP always has latest revision telemetry
   useEffect(() => {
+    if (!isServerHydratedRef.current) return;
     const timer = setTimeout(() => {
       fetch('/api/state', {
         method: 'POST',
@@ -503,11 +523,11 @@ export default function App() {
     }));
   };
 
-  const handleAddChapter = (newChapterData: Omit<Chapter, 'id' | 'revisionCount' | 'createdAt'>) => {
+  const handleAddChapter = (newChapterData: Omit<Chapter, 'id' | 'createdAt'> & { revisionCount?: number }) => {
     const newChapter: Chapter = {
       ...newChapterData,
       id: `chap-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      revisionCount: 0,
+      revisionCount: newChapterData.revisionCount ?? (newChapterData.currentConfidence > 0 ? 1 : 0),
       createdAt: getTodayStr(),
       updatedAt: Date.now(),
     };
@@ -536,9 +556,11 @@ export default function App() {
     const isDone =
       chapter.learningStage === 'FIRST_PASS_DONE' ||
       chapter.learningStage === 'IN_REVISION' ||
-      (chapter.revisionCount || 0) >= 1;
+      (chapter.revisionCount || 0) >= 1 ||
+      (chapter.completionPercentage || 0) >= 100;
 
-    const sessionType: StudySessionType = isDone ? 'revision_round_complete' : 'progress';
+    // Use 'progress' sessionType so calibrating confidence updates rating & schedule without fabricating an extra revision pass
+    const sessionType: StudySessionType = 'progress';
     const compPct = isDone ? 100 : (chapter.completionPercentage || 50);
 
     handleSaveStudyLog(
@@ -559,22 +581,39 @@ export default function App() {
       chapters: prev.chapters.map((c) => {
         if (c.id !== chapterId) return c;
         if (stage === 'FIRST_PASS_DONE') {
+          const revCount = Math.max(1, c.revisionCount || 1);
+          const conf = c.currentConfidence || 3;
+          const gap = calculateNextGap(revCount, conf, prev.settings);
+          const started = c.startedDate || today;
           return {
             ...c,
             learningStage: 'FIRST_PASS_DONE',
             completionPercentage: 100,
+            startedDate: started,
             firstPassCompletedDate: c.firstPassCompletedDate || today,
-            revisionCount: Math.max(1, c.revisionCount || 1),
-            lastStudiedDate: c.lastStudiedDate || today,
+            daysTakenToComplete:
+              c.daysTakenToComplete || 1,
+            revisionCount: revCount,
+            currentConfidence: conf,
+            lastStudiedDate: today,
+            nextRevisionDate: addDaysToDateStr(today, gap),
             updatedAt: Date.now(),
           };
         } else if (stage === 'IN_REVISION') {
+          const revCount = Math.max(2, (c.revisionCount || 1) + 1);
+          const conf = c.currentConfidence || 3;
+          const gap = calculateNextGap(revCount, conf, prev.settings);
+          const started = c.startedDate || today;
           return {
             ...c,
             learningStage: 'IN_REVISION',
             completionPercentage: 100,
-            revisionCount: Math.max(2, (c.revisionCount || 1) + 1),
-            lastStudiedDate: c.lastStudiedDate || today,
+            startedDate: started,
+            firstPassCompletedDate: c.firstPassCompletedDate || today,
+            revisionCount: revCount,
+            currentConfidence: conf,
+            lastStudiedDate: today,
+            nextRevisionDate: addDaysToDateStr(today, gap),
             updatedAt: Date.now(),
           };
         } else if (stage === 'NOT_STARTED') {
@@ -583,13 +622,34 @@ export default function App() {
             learningStage: 'NOT_STARTED',
             completionPercentage: 0,
             revisionCount: 0,
+            currentConfidence: 0,
+            lastStudiedDate: undefined,
+            startedDate: undefined,
+            firstPassCompletedDate: undefined,
+            daysTakenToComplete: undefined,
+            nextRevisionDate: null,
+            totalStudySessions: 0,
+            pillars: {
+              lectures: false,
+              bookReading: false,
+              ncertReading: false,
+              classNotes: false,
+              questionPractice: false,
+              anki: false,
+            },
             updatedAt: Date.now(),
           };
         } else {
           return {
             ...c,
             learningStage: stage,
-            completionPercentage: c.completionPercentage || 25,
+            startedDate: c.startedDate || today,
+            completionPercentage:
+              c.completionPercentage && c.completionPercentage < 100
+                ? c.completionPercentage
+                : 25,
+            nextRevisionDate: null,
+            revisionCount: 0,
             updatedAt: Date.now(),
           };
         }
@@ -605,10 +665,20 @@ export default function App() {
       createdAt: getTodayStr(),
     };
 
+    const linkedSet = new Set(newTest.linkedChapterIds || []);
+
     setAppState((prev) => ({
       ...prev,
       updatedAt: Date.now(),
       tests: [...prev.tests, newTest],
+      chapters:
+        linkedSet.size > 0
+          ? prev.chapters.map((c) =>
+              linkedSet.has(c.id) && (!c.targetDeadline || newTest.date < c.targetDeadline)
+                ? { ...c, targetDeadline: newTest.date, updatedAt: Date.now() }
+                : c
+            )
+          : prev.chapters,
     }));
   };
 
@@ -654,10 +724,30 @@ export default function App() {
 
   // Settings & Reset
   const handleUpdateSettings = (newSettings: SpacedRepetitionSettings) => {
+    const today = getTodayStr();
     setAppState((prev) => ({
       ...prev,
       updatedAt: Date.now(),
       settings: newSettings,
+      chapters: prev.chapters.map((c) => {
+        const isCompleted =
+          c.learningStage === 'FIRST_PASS_DONE' ||
+          c.learningStage === 'IN_REVISION' ||
+          (c.revisionCount || 0) >= 1 ||
+          (c.completionPercentage || 0) >= 100;
+        if (!isCompleted) return c;
+        const anchorDate = c.lastStudiedDate || c.firstPassCompletedDate || today;
+        const nextGap = calculateNextGap(
+          Math.max(1, c.revisionCount || 1),
+          c.currentConfidence || 3,
+          newSettings
+        );
+        return {
+          ...c,
+          nextRevisionDate: addDaysToDateStr(anchorDate, nextGap),
+          updatedAt: Date.now(),
+        };
+      }),
     }));
   };
 
@@ -813,7 +903,7 @@ export default function App() {
             testScores={appState.testScores}
             pacingSettings={appState.pacingSettings}
             onUpdatePacingSettings={(settings) =>
-              setAppState((prev) => ({ ...prev, pacingSettings: settings }))
+              setAppState((prev) => ({ ...prev, pacingSettings: settings, updatedAt: Date.now() }))
             }
             onOpenQuickLogForChapter={handleOpenQuickLog}
           />
@@ -828,7 +918,7 @@ export default function App() {
             testScores={appState.testScores}
             pacingSettings={appState.pacingSettings}
             onUpdatePacingSettings={(settings) =>
-              setAppState((prev) => ({ ...prev, pacingSettings: settings }))
+              setAppState((prev) => ({ ...prev, pacingSettings: settings, updatedAt: Date.now() }))
             }
             onOpenQuickLogForChapter={handleOpenQuickLog}
             onNavigateToStrategy={() => setActiveTab('strategy')}
@@ -876,6 +966,7 @@ export default function App() {
         <QuickAddChapterModal
           isOpen={isAddChapterOpen}
           onClose={() => setIsAddChapterOpen(false)}
+          onAddChapter={handleAddChapter}
           onAdd={handleAddChapter}
         />
       )}
@@ -885,6 +976,8 @@ export default function App() {
           isOpen={isAddTestOpen}
           onClose={() => setIsAddTestOpen(false)}
           chapters={appState.chapters}
+          existingTests={appState.tests}
+          onAddTest={handleAddTest}
           onAdd={handleAddTest}
         />
       )}

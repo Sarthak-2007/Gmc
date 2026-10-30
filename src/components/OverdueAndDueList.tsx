@@ -162,7 +162,7 @@ export const OverdueAndDueList: React.FC<OverdueAndDueListProps> = ({
               const isDueSoon = info.status === 'due_soon';
               const confTier = getConfidenceTier(chapter.currentConfidence);
               const revTier = getRevisionPassTier(chapter.revisionCount || 0);
-              const overdueTier = getOverdueDaysTier(Math.abs(info.daysDiff));
+              const overdueTier = getOverdueDaysTier(info.daysDiff);
 
               return (
                 <div

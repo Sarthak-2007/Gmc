@@ -220,6 +220,21 @@ export const LogScoreModal: React.FC<LogScoreModalProps> = ({
         guessingWild: err.guessingWild ?? 0,
       });
       setErrorNotes(err.notes || '');
+    } else {
+      setDateRecorded(getTodayStr());
+      setQuickTotalScore(590);
+      setSubjectData({
+        Physics: { score: 140, correct: 36, incorrect: 4, unattempted: 5, errors: { sillyMistakes: 1, conceptualGaps: 2, memoryRecall: 0, timePressure: 1, guessingWild: 0 } },
+        Chemistry: { score: 145, correct: 37, incorrect: 3, unattempted: 5, errors: { sillyMistakes: 1, conceptualGaps: 1, memoryRecall: 1, timePressure: 0, guessingWild: 0 } },
+        Botany: { score: 155, correct: 39, incorrect: 1, unattempted: 5, errors: { sillyMistakes: 0, conceptualGaps: 0, memoryRecall: 1, timePressure: 0, guessingWild: 0 } },
+        Zoology: { score: 150, correct: 38, incorrect: 2, unattempted: 5, errors: { sillyMistakes: 1, conceptualGaps: 0, memoryRecall: 1, timePressure: 0, guessingWild: 0 } },
+      });
+      setQuickCorrect(150);
+      setQuickIncorrect(10);
+      setQuickUnattempted(20);
+      setGlobalErrors({ sillyMistakes: 3, conceptualGaps: 3, memoryRecall: 3, timePressure: 1, guessingWild: 0 });
+      setNotes('');
+      setErrorNotes('');
     }
   };
 
@@ -324,17 +339,19 @@ export const LogScoreModal: React.FC<LogScoreModalProps> = ({
     const subjectQuestions: Partial<Record<Subject, SubjectQuestionCount>> = {};
     const bySubjectErrors: Partial<Record<Subject, SubjectErrorBreakdown>> = {};
 
-    SUBJECTS.forEach((sub) => {
-      const d = subjectData[sub];
-      if (d.score !== '') subjectScores[sub] = Number(d.score);
-      subjectQuestions[sub] = {
-        correct: d.correct !== '' ? Number(d.correct) : undefined,
-        incorrect: d.incorrect !== '' ? Number(d.incorrect) : undefined,
-        unattempted: d.unattempted !== '' ? Number(d.unattempted) : undefined,
-        score: d.score !== '' ? Number(d.score) : undefined,
-      };
-      bySubjectErrors[sub] = { ...d.errors };
-    });
+    if (entryMode === 'SUBJECT_WISE') {
+      SUBJECTS.forEach((sub) => {
+        const d = subjectData[sub];
+        if (d.score !== '') subjectScores[sub] = Number(d.score);
+        subjectQuestions[sub] = {
+          correct: d.correct !== '' ? Number(d.correct) : undefined,
+          incorrect: d.incorrect !== '' ? Number(d.incorrect) : undefined,
+          unattempted: d.unattempted !== '' ? Number(d.unattempted) : undefined,
+          score: d.score !== '' ? Number(d.score) : undefined,
+        };
+        bySubjectErrors[sub] = { ...d.errors };
+      });
+    }
 
     const finalErrors: ErrorBreakdown = {
       sillyMistakes:
@@ -347,7 +364,7 @@ export const LogScoreModal: React.FC<LogScoreModalProps> = ({
         entryMode === 'SUBJECT_WISE' ? aggregatedSubjectTotals.time : globalErrors.timePressure || 0,
       guessingWild:
         entryMode === 'SUBJECT_WISE' ? aggregatedSubjectTotals.wild : globalErrors.guessingWild || 0,
-      bySubject: bySubjectErrors,
+      bySubject: entryMode === 'SUBJECT_WISE' ? bySubjectErrors : undefined,
       notes: errorNotes.trim() || undefined,
     };
 
@@ -381,8 +398,8 @@ export const LogScoreModal: React.FC<LogScoreModalProps> = ({
           ? Number(quickUnattempted)
           : undefined,
       errors: finalErrors,
-      subjectScores: Object.keys(subjectScores).length > 0 ? subjectScores : undefined,
-      subjectQuestions: Object.keys(subjectQuestions).length > 0 ? subjectQuestions : undefined,
+      subjectScores: entryMode === 'SUBJECT_WISE' && Object.keys(subjectScores).length > 0 ? subjectScores : undefined,
+      subjectQuestions: entryMode === 'SUBJECT_WISE' && Object.keys(subjectQuestions).length > 0 ? subjectQuestions : undefined,
       notes: notes.trim() || undefined,
     });
 

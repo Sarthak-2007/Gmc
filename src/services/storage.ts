@@ -3,6 +3,39 @@ import { AppState, Chapter, SpacedRepetitionSettings, StudyLog, SyllabusPacingSe
 
 const STORAGE_KEY = 'pcb01_study_console_state_v4';
 
+function normalizeChapter(ch: Chapter): Chapter {
+  const hasBook = Boolean(ch.pillars?.bookReading || ch.pillars?.ncertReading);
+  return {
+    ...ch,
+    startedDate: ch.startedDate || null,
+    firstPassCompletedDate: ch.firstPassCompletedDate || null,
+    daysTakenToComplete:
+      ch.daysTakenToComplete !== undefined && ch.daysTakenToComplete !== null
+        ? Number(ch.daysTakenToComplete)
+        : null,
+    targetDeadline: ch.targetDeadline || null,
+    updatedAt: Number(ch.updatedAt) || (ch.lastStudiedDate ? new Date(ch.lastStudiedDate).getTime() : 0),
+    pillars: ch.pillars
+      ? {
+          lectures: !!ch.pillars.lectures,
+          bookReading: hasBook,
+          ncertReading: hasBook,
+          classNotes: !!ch.pillars.classNotes,
+          questionPractice: !!ch.pillars.questionPractice,
+          anki: !!ch.pillars.anki,
+        }
+      : { lectures: false, bookReading: false, ncertReading: false, classNotes: false, questionPractice: false, anki: false },
+    learningStage:
+      ch.learningStage ||
+      (ch.completionPercentage && ch.completionPercentage >= 100
+        ? 'FIRST_PASS_DONE'
+        : ch.completionPercentage && ch.completionPercentage > 0
+        ? 'IN_PROGRESS'
+        : 'NOT_STARTED'),
+    completionPercentage: ch.completionPercentage ?? 0,
+  };
+}
+
 export function loadAppState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -10,31 +43,10 @@ export function loadAppState(): AppState {
       return getInitialState();
     }
     const parsed = JSON.parse(raw);
-    const loadedChapters = Array.isArray(parsed.chapters) && parsed.chapters.length > 0
-      ? parsed.chapters.map((ch: Chapter) => ({
-          ...ch,
-          startedDate: ch.startedDate || null,
-          firstPassCompletedDate: ch.firstPassCompletedDate || null,
-          daysTakenToComplete:
-            ch.daysTakenToComplete !== undefined && ch.daysTakenToComplete !== null
-              ? Number(ch.daysTakenToComplete)
-              : null,
-          targetDeadline: ch.targetDeadline || null,
-          updatedAt: Number(ch.updatedAt) || (ch.lastStudiedDate ? new Date(ch.lastStudiedDate).getTime() : 0),
-          pillars: ch.pillars
-            ? {
-                lectures: !!ch.pillars.lectures,
-                bookReading: !!(ch.pillars.bookReading ?? ch.pillars.ncertReading),
-                ncertReading: !!(ch.pillars.bookReading ?? ch.pillars.ncertReading),
-                classNotes: !!ch.pillars.classNotes,
-                questionPractice: !!ch.pillars.questionPractice,
-                anki: !!ch.pillars.anki,
-              }
-            : { lectures: false, bookReading: false, ncertReading: false, classNotes: false, questionPractice: false, anki: false },
-          learningStage: ch.learningStage || (ch.completionPercentage && ch.completionPercentage >= 100 ? 'FIRST_PASS_DONE' : ch.completionPercentage && ch.completionPercentage > 0 ? 'IN_PROGRESS' : 'NOT_STARTED'),
-          completionPercentage: ch.completionPercentage ?? 0,
-        }))
-      : INITIAL_CHAPTERS;
+    const loadedChapters =
+      Array.isArray(parsed.chapters) && parsed.chapters.length > 0
+        ? parsed.chapters.map(normalizeChapter)
+        : INITIAL_CHAPTERS;
 
     return {
       chapters: loadedChapters,
@@ -42,8 +54,18 @@ export function loadAppState(): AppState {
       tests: Array.isArray(parsed.tests) && parsed.tests.length > 0 ? parsed.tests : INITIAL_TESTS,
       testScores: Array.isArray(parsed.testScores) ? parsed.testScores : INITIAL_TEST_SCORES,
       actionHistory: Array.isArray(parsed.actionHistory) ? parsed.actionHistory : [],
-      settings: parsed.settings || DEFAULT_SETTINGS,
-      pacingSettings: parsed.pacingSettings || DEFAULT_PACING_SETTINGS,
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ...(parsed.settings || {}),
+        confidenceMultipliers: {
+          ...DEFAULT_SETTINGS.confidenceMultipliers,
+          ...(parsed.settings?.confidenceMultipliers || {}),
+        },
+      },
+      pacingSettings: {
+        ...DEFAULT_PACING_SETTINGS,
+        ...(parsed.pacingSettings || {}),
+      },
       tutorialCompleted: !!parsed.tutorialCompleted,
       updatedAt: Number(parsed.updatedAt) || Date.now(),
       deviceClientId: parsed.deviceClientId || undefined,
@@ -98,16 +120,27 @@ export function importBackupJSON(file: File): Promise<AppState> {
       try {
         const text = e.target?.result as string;
         const parsed = JSON.parse(text);
-        if (!parsed.chapters || !parsed.studyLogs || !parsed.tests) {
+        if (!Array.isArray(parsed.chapters) || !Array.isArray(parsed.studyLogs) || !Array.isArray(parsed.tests)) {
           throw new Error('Invalid backup file format.');
         }
         const state: AppState = {
-          chapters: parsed.chapters,
+          chapters: parsed.chapters.map(normalizeChapter),
           studyLogs: parsed.studyLogs,
           tests: parsed.tests,
-          testScores: parsed.testScores || [],
-          settings: parsed.settings || DEFAULT_SETTINGS,
-          pacingSettings: parsed.pacingSettings || DEFAULT_PACING_SETTINGS,
+          testScores: Array.isArray(parsed.testScores) ? parsed.testScores : [],
+          actionHistory: Array.isArray(parsed.actionHistory) ? parsed.actionHistory : [],
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...(parsed.settings || {}),
+            confidenceMultipliers: {
+              ...DEFAULT_SETTINGS.confidenceMultipliers,
+              ...(parsed.settings?.confidenceMultipliers || {}),
+            },
+          },
+          pacingSettings: {
+            ...DEFAULT_PACING_SETTINGS,
+            ...(parsed.pacingSettings || {}),
+          },
           tutorialCompleted: !!parsed.tutorialCompleted,
           updatedAt: Date.now(),
         };

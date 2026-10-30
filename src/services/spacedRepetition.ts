@@ -11,16 +11,19 @@ import { Chapter, LearningStage, SpacedRepetitionSettings, StudyLog, StudySessio
 export function calculateNextGap(
   revisionNumber: number,
   confidenceRating: number,
-  settings: SpacedRepetitionSettings
+  settings?: SpacedRepetitionSettings
 ): number {
-  const gaps = settings.defaultGaps && settings.defaultGaps.length > 0 ? settings.defaultGaps : [3, 7, 14, 30];
+  const gaps = settings?.defaultGaps && settings.defaultGaps.length > 0 ? settings.defaultGaps : [3, 7, 14, 30];
   
   // Index for gap: revision 1 -> gaps[0], revision 2 -> gaps[1], etc.
   const gapIndex = Math.min(Math.max(0, revisionNumber - 1), gaps.length - 1);
   const baseGap = gaps[gapIndex];
 
+  const defaultMults: Record<number, number> = { 1: 0.5, 2: 0.5, 3: 1.0, 4: 1.5, 5: 1.5 };
   const multiplier =
-    settings.confidenceMultipliers?.[confidenceRating as keyof typeof settings.confidenceMultipliers] ?? 1.0;
+    settings?.confidenceMultipliers?.[confidenceRating as keyof typeof settings.confidenceMultipliers] ??
+    defaultMults[confidenceRating] ??
+    1.0;
 
   const adjustedGap = Math.round(baseGap * multiplier);
   return Math.max(1, adjustedGap);
@@ -131,26 +134,37 @@ export function getChapterRevisionInfo(
     status = 'not_started';
   } else if (stage === 'IN_PROGRESS' || completionPercentage < 100) {
     status = 'in_progress';
-  } else if (!chapter.nextRevisionDate) {
-    status = 'scheduled';
   } else {
-    // daysDiff = nextRevisionDate - today
-    daysDiff = getDaysDifference(todayStr, chapter.nextRevisionDate);
+    // Fallback nextRevisionDate if missing on a completed chapter
+    const effectiveNextRevisionDate =
+      chapter.nextRevisionDate ||
+      (chapter.lastStudiedDate || chapter.firstPassCompletedDate
+        ? addDaysToDateStr(
+            (chapter.lastStudiedDate || chapter.firstPassCompletedDate)!,
+            calculateNextGap(chapter.revisionCount || 1, chapter.currentConfidence || 3)
+          )
+        : null);
 
-    // If chapter was studied/revised recently (today or within 1 day) or on/after nextRevisionDate, the penalty is resolved!
-    const isRecentlyStudied = chapter.lastStudiedDate && (
-      chapter.lastStudiedDate >= chapter.nextRevisionDate ||
-      getDaysDifference(chapter.lastStudiedDate, todayStr) <= 1
-    );
-
-    if (daysDiff < 0) {
-      status = isRecentlyStudied ? 'scheduled' : 'overdue';
-    } else if (daysDiff === 0) {
-      status = isRecentlyStudied ? 'scheduled' : 'due_today';
-    } else if (daysDiff <= 2) {
-      status = 'due_soon';
-    } else {
+    if (!effectiveNextRevisionDate) {
       status = 'scheduled';
+    } else {
+      // daysDiff = nextRevisionDate - today
+      daysDiff = getDaysDifference(todayStr, effectiveNextRevisionDate);
+
+      // Only mark as resolved if the chapter was studied on or after its scheduled revision date
+      const isResolvedOnOrAfterDue = Boolean(
+        chapter.lastStudiedDate && chapter.lastStudiedDate >= effectiveNextRevisionDate
+      );
+
+      if (daysDiff < 0) {
+        status = isResolvedOnOrAfterDue ? 'scheduled' : 'overdue';
+      } else if (daysDiff === 0) {
+        status = isResolvedOnOrAfterDue ? 'scheduled' : 'due_today';
+      } else if (daysDiff <= 2) {
+        status = 'due_soon';
+      } else {
+        status = 'scheduled';
+      }
     }
   }
 
@@ -215,26 +229,43 @@ export function applyStudyLogToChapter(
   // Determine final percentage for this log
   let finalPercentage = completionPercentage !== undefined ? completionPercentage : (chapter.completionPercentage ?? 50);
 
-  if (sessionType === 'first_pass_complete' || finalPercentage >= 100) {
-    // Reached 100% first pass milestone!
-    finalPercentage = 100;
-    newStage = 'FIRST_PASS_DONE';
-    newRevisionCount = Math.max(1, chapter.revisionCount === 0 ? 1 : chapter.revisionCount);
-    firstPassCompletedDate = chapter.firstPassCompletedDate || dateStudied;
-    daysTakenToComplete = Math.max(1, getDaysDifference(startedDate, dateStudied) + 1);
-    
-    // Schedule first spaced repetition (Day 3 by default)
-    const nextGapDays = calculateNextGap(newRevisionCount, confidenceRating, settings);
-    nextRevisionDate = addDaysToDateStr(dateStudied, nextGapDays);
-  } else if (
-    sessionType === 'revision_round_complete' ||
+  const wasAlreadyCompleted =
+    chapter.learningStage === 'FIRST_PASS_DONE' ||
     chapter.learningStage === 'IN_REVISION' ||
-    chapter.learningStage === 'FIRST_PASS_DONE'
+    (chapter.revisionCount || 0) >= 1 ||
+    (chapter.completionPercentage || 0) >= 100;
+
+  if (
+    sessionType === 'revision_round_complete' ||
+    (wasAlreadyCompleted && sessionType === 'first_pass_complete')
   ) {
     // Finished revision round for already completed chapter
     finalPercentage = 100;
     newStage = 'IN_REVISION';
-    newRevisionCount = (chapter.revisionCount || 0) + 1;
+    newRevisionCount = Math.max(2, (chapter.revisionCount || 1) + 1);
+    firstPassCompletedDate = chapter.firstPassCompletedDate || dateStudied;
+    if (!daysTakenToComplete) {
+      daysTakenToComplete = Math.max(1, getDaysDifference(startedDate, firstPassCompletedDate) + 1);
+    }
+    const nextGapDays = calculateNextGap(newRevisionCount, confidenceRating, settings);
+    nextRevisionDate = addDaysToDateStr(dateStudied, nextGapDays);
+  } else if (!wasAlreadyCompleted && (sessionType === 'first_pass_complete' || finalPercentage >= 100)) {
+    // Reached 100% first pass milestone for the first time!
+    finalPercentage = 100;
+    newStage = 'FIRST_PASS_DONE';
+    newRevisionCount = 1;
+    firstPassCompletedDate = chapter.firstPassCompletedDate || dateStudied;
+    daysTakenToComplete = Math.max(1, getDaysDifference(startedDate, dateStudied) + 1);
+
+    // Schedule first spaced repetition (Day 3 by default)
+    const nextGapDays = calculateNextGap(newRevisionCount, confidenceRating, settings);
+    nextRevisionDate = addDaysToDateStr(dateStudied, nextGapDays);
+  } else if (wasAlreadyCompleted) {
+    // Supplementary progress / pillar / confidence update on an already completed chapter
+    finalPercentage = 100;
+    newStage = chapter.learningStage === 'IN_REVISION' ? 'IN_REVISION' : 'FIRST_PASS_DONE';
+    newRevisionCount = Math.max(1, chapter.revisionCount || 1);
+    firstPassCompletedDate = chapter.firstPassCompletedDate || dateStudied;
     const nextGapDays = calculateNextGap(newRevisionCount, confidenceRating, settings);
     nextRevisionDate = addDaysToDateStr(dateStudied, nextGapDays);
   } else {
@@ -245,10 +276,16 @@ export function applyStudyLogToChapter(
     nextRevisionDate = null; // NOT in revision yet!
   }
 
-  // Merge pillars
-  const mergedPillars = {
+  // Merge pillars (consolidating bookReading and ncertReading alias)
+  const rawMergedPillars = {
     ...(chapter.pillars || {}),
     ...(pillarsCompleted || {}),
+  };
+  const hasBook = Boolean(rawMergedPillars.bookReading || rawMergedPillars.ncertReading);
+  const mergedPillars = {
+    ...rawMergedPillars,
+    bookReading: hasBook,
+    ncertReading: hasBook,
   };
 
   const newLog: StudyLog = {
@@ -323,13 +360,15 @@ export function recalculateChapterFromRemainingLogs(
     };
   }
 
-  // Sort logs chronologically ascending
-  const sorted = [...chapterLogs].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+  // Sort logs chronologically ascending by dateStudied first, then timestamp
+  const sorted = [...chapterLogs].sort(
+    (a, b) => (a.dateStudied || '').localeCompare(b.dateStudied || '') || (a.timestamp || 0) - (b.timestamp || 0)
+  );
 
   const earliestLog = sorted[0];
   const latestLog = sorted[sorted.length - 1];
 
-  const startedDate = chapter.startedDate || earliestLog.dateStudied;
+  const startedDate = earliestLog.dateStudied;
   const lastStudiedDate = latestLog.dateStudied;
   const currentConfidence = latestLog.confidenceRating || 3;
 
@@ -659,10 +698,12 @@ export function calculateSyllabusPacing(
   // Days until Syllabus Completion Deadline
   const daysUntilSyllabusTarget = Math.max(1, getDaysDifference(todayStr, safeSettings.targetSyllabusDate));
   const weeksUntilSyllabusTarget = Math.max(0.1, daysUntilSyllabusTarget / 7);
+  const studyDaysPerWeek = Math.max(1, Math.min(7, safeSettings.studyDaysPerWeek || 7));
+  const activeStudyDaysUntilSyllabus = Math.max(1, daysUntilSyllabusTarget * (studyDaysPerWeek / 7));
 
-  // Required 1st Pass Velocity to meet target
+  // Required 1st Pass Velocity to meet target (per week and per active study day)
   const required1stPassVelocityPerWeek = Math.round((remaining1stPassCount / weeksUntilSyllabusTarget) * 10) / 10;
-  const required1stPassVelocityPerDay = Math.round((remaining1stPassCount / daysUntilSyllabusTarget) * 100) / 100;
+  const required1stPassVelocityPerDay = Math.round((remaining1stPassCount / activeStudyDaysUntilSyllabus) * 100) / 100;
 
   // Actual Weekly Velocity
   // Pick the most representative non-zero velocity (recent pace or active pace), fallback to 1.5
@@ -682,13 +723,17 @@ export function calculateSyllabusPacing(
   const daysFromSyllabusTargetToExam = Math.max(1, getDaysDifference(safeSettings.targetSyllabusDate, safeSettings.targetExamDate));
   const weeksFromSyllabusTargetToExam = Math.max(0.1, daysFromSyllabusTargetToExam / 7);
 
-  // Total revision operations needed after 1st pass: totalChapters * targetRevisionPasses
-  const totalRevisionOperationsNeeded = totalChapters * (safeSettings.targetRevisionPasses || 3);
+  // Remaining revision operations needed after 1st pass, crediting already-completed extra revisions
+  const targetRevPasses = safeSettings.targetRevisionPasses || 3;
+  const totalRevisionOperationsNeeded = activeChapters.reduce((sum, ch) => {
+    const completedExtraRevs = Math.max(0, (ch.revisionCount || 0) - 1);
+    return sum + Math.max(0, targetRevPasses - completedExtraRevs);
+  }, 0);
   const requiredRevisionPassVelocityPerWeek = Math.round((totalRevisionOperationsNeeded / weeksFromSyllabusTargetToExam) * 10) / 10;
 
-  // Test Cadence
+  // Test Cadence (distinct testIds completed)
   const totalTestsPlanned = safeSettings.includeAllTestsGoal ? Math.max(tests.length, safeSettings.targetMockTestsCount) : safeSettings.targetMockTestsCount;
-  const testsCompletedCount = testScores.length;
+  const testsCompletedCount = new Set(testScores.map((s) => s.testId)).size;
   const testsRemainingCount = Math.max(0, totalTestsPlanned - testsCompletedCount);
   const totalDaysUntilExam = Math.max(1, getDaysDifference(todayStr, safeSettings.targetExamDate));
   const requiredTestFrequencyDays = testsRemainingCount > 0 ? Math.max(1, Math.round(totalDaysUntilExam / testsRemainingCount)) : 7;

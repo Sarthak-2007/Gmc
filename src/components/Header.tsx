@@ -87,18 +87,20 @@ export const Header: React.FC<HeaderProps> = ({
     setSfxEnabled(next);
   };
 
-  // Compute streak
+  // Compute streak using local calendar dates
   const uniqueStudyDays = new Set(studyLogs.map((l) => l.dateStudied));
   let streak = 0;
-  let checkDate = new Date();
-  
+  const checkDate = new Date();
+  const formatLocalYMD = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   const todayStudied = uniqueStudyDays.has(todayStr);
   if (!todayStudied) {
     checkDate.setDate(checkDate.getDate() - 1);
   }
-  
+
   while (true) {
-    const dStr = checkDate.toISOString().split('T')[0];
+    const dStr = formatLocalYMD(checkDate);
     if (uniqueStudyDays.has(dStr)) {
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);

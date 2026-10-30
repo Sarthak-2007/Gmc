@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import { X, Plus, BookOpen, Layers } from 'lucide-react';
 import { NEET_CLUSTERS } from '../data/seedData';
 import { Chapter, Subject } from '../types';
-import { getTodayStr } from '../services/spacedRepetition';
+import { addDaysToDateStr, calculateNextGap, getTodayStr } from '../services/spacedRepetition';
 
 interface QuickAddChapterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddChapter: (chapter: Omit<Chapter, 'id' | 'createdAt'>) => void;
+  onAddChapter?: (chapter: Omit<Chapter, 'id' | 'createdAt'>) => void;
+  onAdd?: (chapter: Omit<Chapter, 'id' | 'createdAt'>) => void;
 }
 
 export const QuickAddChapterModal: React.FC<QuickAddChapterModalProps> = ({
   isOpen,
   onClose,
   onAddChapter,
+  onAdd,
 }) => {
   const [name, setName] = useState('');
   const [subject, setSubject] = useState<Subject>('Physics');
@@ -36,18 +38,29 @@ export const QuickAddChapterModal: React.FC<QuickAddChapterModalProps> = ({
 
     const cluster = NEET_CLUSTERS.find((c) => c.id === clusterId);
     const clusterName = cluster ? cluster.name : 'General Cluster';
+    const today = getTodayStr();
+    const isCompleted = initialConfidence > 0;
+    const addFn = onAddChapter || onAdd;
 
-    onAddChapter({
-      name: name.trim(),
-      subject,
-      clusterId,
-      clusterName,
-      currentConfidence: initialConfidence,
-      lastStudiedDate: initialConfidence > 0 ? getTodayStr() : null,
-      nextRevisionDate: null,
-      revisionCount: initialConfidence > 0 ? 1 : 0,
-      isArchived: false,
-    });
+    if (addFn) {
+      addFn({
+        name: name.trim(),
+        subject,
+        clusterId,
+        clusterName,
+        classLevel: clusterId <= 3 || clusterId === 6 || clusterId === 9 || clusterId === 12 ? '11' : '12',
+        learningStage: isCompleted ? 'FIRST_PASS_DONE' : 'NOT_STARTED',
+        completionPercentage: isCompleted ? 100 : 0,
+        startedDate: isCompleted ? today : undefined,
+        firstPassCompletedDate: isCompleted ? today : undefined,
+        daysTakenToComplete: isCompleted ? 1 : undefined,
+        currentConfidence: initialConfidence,
+        lastStudiedDate: isCompleted ? today : null,
+        nextRevisionDate: isCompleted ? addDaysToDateStr(today, calculateNextGap(1, initialConfidence)) : null,
+        revisionCount: isCompleted ? 1 : 0,
+        isArchived: false,
+      });
+    }
 
     setName('');
     onClose();

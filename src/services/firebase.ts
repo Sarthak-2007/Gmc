@@ -194,8 +194,8 @@ export function parseFirestoreState(data: any): AppState {
           pillars: ch.pillars
             ? {
                 lectures: !!ch.pillars.lectures,
-                bookReading: !!(ch.pillars.bookReading ?? ch.pillars.ncertReading),
-                ncertReading: !!(ch.pillars.bookReading ?? ch.pillars.ncertReading),
+                bookReading: !!(ch.pillars.bookReading || ch.pillars.ncertReading),
+                ncertReading: !!(ch.pillars.bookReading || ch.pillars.ncertReading),
                 classNotes: !!ch.pillars.classNotes,
                 questionPractice: !!ch.pillars.questionPractice,
                 anki: !!ch.pillars.anki,
@@ -229,6 +229,7 @@ export function parseFirestoreState(data: any): AppState {
     studyLogs: Array.isArray(data.studyLogs) ? data.studyLogs : INITIAL_STUDY_LOGS,
     tests: Array.isArray(data.tests) ? data.tests : INITIAL_TESTS,
     testScores: Array.isArray(data.testScores) ? data.testScores : INITIAL_TEST_SCORES,
+    actionHistory: Array.isArray(data.actionHistory) ? data.actionHistory : [],
     settings: data.settings || DEFAULT_SETTINGS,
     pacingSettings: data.pacingSettings || DEFAULT_PACING_SETTINGS,
     tutorialCompleted: !!data.tutorialCompleted,
@@ -376,7 +377,7 @@ export function mergeLocalAndCloudState(local: AppState, cloud: AppState): AppSt
       targetDeadline: finalTargetDeadline,
       notes: finalNotes,
       lastStudiedDate: finalLastStudiedDate,
-      updatedAt: Math.max(localUpdatedAt, cloudUpdatedAt, Date.now()),
+      updatedAt: Math.max(localUpdatedAt, cloudUpdatedAt),
     };
   });
 
@@ -387,6 +388,9 @@ export function mergeLocalAndCloudState(local: AppState, cloud: AppState): AppSt
     studyLogs: mergedStudyLogs,
     tests: mergedTests,
     testScores: mergedTestScores,
+    actionHistory: isCloudNewer
+      ? cloud.actionHistory || local.actionHistory || []
+      : local.actionHistory || cloud.actionHistory || [],
     settings: isCloudNewer ? (cloud.settings || local.settings || DEFAULT_SETTINGS) : (local.settings || cloud.settings || DEFAULT_SETTINGS),
     pacingSettings: isCloudNewer ? (cloud.pacingSettings || local.pacingSettings || DEFAULT_PACING_SETTINGS) : (local.pacingSettings || cloud.pacingSettings || DEFAULT_PACING_SETTINGS),
     tutorialCompleted: !!(local.tutorialCompleted || cloud.tutorialCompleted),
@@ -429,8 +433,8 @@ export async function saveStateToFirestore(userId: string, state: AppState): Pro
       completionPercentage: Math.max(0, Math.min(100, Number(ch.completionPercentage) || 0)),
       pillars: {
         lectures: !!ch.pillars?.lectures,
-        bookReading: !!(ch.pillars?.bookReading ?? ch.pillars?.ncertReading),
-        ncertReading: !!(ch.pillars?.bookReading ?? ch.pillars?.ncertReading),
+        bookReading: !!(ch.pillars?.bookReading || ch.pillars?.ncertReading),
+        ncertReading: !!(ch.pillars?.bookReading || ch.pillars?.ncertReading),
         classNotes: !!ch.pillars?.classNotes,
         questionPractice: !!ch.pillars?.questionPractice,
         anki: !!ch.pillars?.anki,
@@ -442,7 +446,7 @@ export async function saveStateToFirestore(userId: string, state: AppState): Pro
           ? Number(ch.daysTakenToComplete)
           : null,
       targetDeadline: ch.targetDeadline || null,
-      updatedAt: Number(ch.updatedAt) || currentTimestamp,
+      updatedAt: Number(ch.updatedAt) || 0,
       totalStudySessions: Number(ch.totalStudySessions) || 0,
       currentConfidence: Number(ch.currentConfidence) || 0,
       lastStudiedDate: ch.lastStudiedDate || null,
@@ -466,8 +470,8 @@ export async function saveStateToFirestore(userId: string, state: AppState): Pro
       pillarsCompleted: l.pillarsCompleted
         ? {
             lectures: !!l.pillarsCompleted.lectures,
-            bookReading: !!(l.pillarsCompleted.bookReading ?? l.pillarsCompleted.ncertReading),
-            ncertReading: !!(l.pillarsCompleted.bookReading ?? l.pillarsCompleted.ncertReading),
+            bookReading: !!(l.pillarsCompleted.bookReading || l.pillarsCompleted.ncertReading),
+            ncertReading: !!(l.pillarsCompleted.bookReading || l.pillarsCompleted.ncertReading),
             classNotes: !!l.pillarsCompleted.classNotes,
             questionPractice: !!l.pillarsCompleted.questionPractice,
             anki: !!l.pillarsCompleted.anki,
@@ -537,13 +541,14 @@ export async function saveStateToFirestore(userId: string, state: AppState): Pro
       },
     },
     pacingSettings: {
-      targetSyllabusDate: state.pacingSettings?.targetSyllabusDate || '2026-03-31',
-      targetExamDate: state.pacingSettings?.targetExamDate || '2026-05-03',
-      targetRevisionPasses: Number(state.pacingSettings?.targetRevisionPasses) || 3,
-      targetMockTestsCount: Number(state.pacingSettings?.targetMockTestsCount) || 25,
+      targetSyllabusDate: state.pacingSettings?.targetSyllabusDate || DEFAULT_PACING_SETTINGS.targetSyllabusDate,
+      targetExamDate: state.pacingSettings?.targetExamDate || DEFAULT_PACING_SETTINGS.targetExamDate,
+      targetRevisionPasses: Number(state.pacingSettings?.targetRevisionPasses) || DEFAULT_PACING_SETTINGS.targetRevisionPasses,
+      targetMockTestsCount: Number(state.pacingSettings?.targetMockTestsCount) || DEFAULT_PACING_SETTINGS.targetMockTestsCount,
       includeAllTestsGoal: state.pacingSettings?.includeAllTestsGoal !== false,
-      studyDaysPerWeek: Number(state.pacingSettings?.studyDaysPerWeek) || 6,
+      studyDaysPerWeek: Number(state.pacingSettings?.studyDaysPerWeek) || DEFAULT_PACING_SETTINGS.studyDaysPerWeek,
     },
+    actionHistory: Array.isArray(state.actionHistory) ? state.actionHistory.slice(0, 50) : [],
     tutorialCompleted: !!state.tutorialCompleted,
   };
 

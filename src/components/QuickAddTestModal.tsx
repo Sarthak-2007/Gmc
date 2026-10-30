@@ -7,16 +7,18 @@ interface QuickAddTestModalProps {
   isOpen: boolean;
   onClose: () => void;
   chapters: Chapter[];
-  existingTests: Test[];
-  onAddTest: (test: Omit<Test, 'id' | 'createdAt'>) => void;
+  existingTests?: Test[];
+  onAddTest?: (test: Omit<Test, 'id' | 'createdAt'>) => void;
+  onAdd?: (test: Omit<Test, 'id' | 'createdAt'>) => void;
 }
 
 export const QuickAddTestModal: React.FC<QuickAddTestModalProps> = ({
   isOpen,
   onClose,
   chapters,
-  existingTests,
+  existingTests = [],
   onAddTest,
+  onAdd,
 }) => {
   const [name, setName] = useState('');
   const [coachingName, setCoachingName] = useState('Allen');
@@ -56,14 +58,17 @@ export const QuickAddTestModal: React.FC<QuickAddTestModalProps> = ({
     e.preventDefault();
     if (!name.trim() || !date) return;
 
-    onAddTest({
-      name: name.trim(),
-      coachingName: coachingName.trim(),
-      date,
-      subjectOrScope: subjectOrScope.trim() || 'Custom Syllabus Scope',
-      linkedChapterIds: selectedChapterIds,
-      totalMarks: Number(totalMarks) || 720,
-    });
+    const addFn = onAddTest || onAdd;
+    if (addFn) {
+      addFn({
+        name: name.trim(),
+        coachingName: coachingName.trim(),
+        date,
+        subjectOrScope: subjectOrScope.trim() || 'Custom Syllabus Scope',
+        linkedChapterIds: selectedChapterIds,
+        totalMarks: Number(totalMarks) || 720,
+      });
+    }
 
     onClose();
   };

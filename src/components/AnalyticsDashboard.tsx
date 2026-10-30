@@ -152,7 +152,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       if (pillarSearch.trim()) {
         const q = pillarSearch.toLowerCase();
         const matchName = c.name.toLowerCase().includes(q);
-        const matchUnit = (c.clusterId || '').toLowerCase().includes(q);
+        const matchUnit =
+          String(c.clusterId || '').toLowerCase().includes(q) ||
+          (c.clusterName || '').toLowerCase().includes(q);
         return matchName || matchUnit;
       }
 
@@ -796,7 +798,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <div className="mt-3 divide-y-2 divide-[#E4E2DC] mx-2">
             {criticalRiskChapters.map(({ chapter, info }) => {
               const chTier = getConfidenceTier(chapter.currentConfidence);
-              const overdueTier = getOverdueDaysTier(Math.abs(info.daysDiff));
+              const overdueTier = getOverdueDaysTier(info.daysDiff);
               return (
                 <div
                   key={chapter.id}
@@ -809,7 +811,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                       </span>
                       <span className="text-xs font-black text-[#141416] uppercase">{chapter.name}</span>
                       <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-[2px] border border-[#141416] ${overdueTier.badgeClass}`}>
-                        Overdue by {Math.abs(info.daysDiff)} {Math.abs(info.daysDiff) === 1 ? 'day' : 'days'}
+                        {info.status === 'overdue'
+                          ? `Overdue by ${Math.abs(info.daysDiff)} ${Math.abs(info.daysDiff) === 1 ? 'day' : 'days'}`
+                          : info.status === 'due_today'
+                          ? 'Due Today'
+                          : `Due in ${info.daysDiff} ${info.daysDiff === 1 ? 'day' : 'days'}`}
                       </span>
                     </div>
                     <div className="text-xs text-[#5C5A52] mt-1">

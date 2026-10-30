@@ -199,10 +199,12 @@ export const TestManager: React.FC<TestManagerProps> = ({
     };
 
     testScores.forEach((score) => {
-      totalMarksBleed += score.incorrectQuestions || 0;
-      if (score.correctQuestions) totalCorrect += score.correctQuestions;
-      if (score.correctQuestions && score.incorrectQuestions) {
-        totalAttempted += score.correctQuestions + score.incorrectQuestions;
+      const cor = score.correctQuestions || 0;
+      const inc = score.incorrectQuestions || 0;
+      totalMarksBleed += inc;
+      totalCorrect += cor;
+      if (cor > 0 || inc > 0) {
+        totalAttempted += cor + inc;
       }
       if (score.errors) {
         totalSillyMistakes += score.errors.sillyMistakes || 0;
@@ -240,7 +242,7 @@ export const TestManager: React.FC<TestManagerProps> = ({
       totalWildGuesses;
 
     const accuracyPct =
-      totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 85;
+      totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
 
     const avgScorePct =
       testScores.length > 0
